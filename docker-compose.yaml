@@ -1,0 +1,52 @@
+version: '3.3'
+services:
+  app: &app_base
+    build:
+      context: ./http_server
+      dockerfile: ./devops/docker/node/Dockerfile
+    image: backend_http:latest
+    command: bash -c "/wait && npm start"
+    environment:
+      WAIT_HOSTS: mongodb:27017,redis:6379
+      WAIT_TIMEOUT: 60
+    env_file:
+      - ./http_server/.env
+    ports:
+      - 5000:5000
+    depends_on:
+      - mongodb
+    volumes:
+      - ../logs/betting-app/http_server/:/app/logs
+  app_ws:
+    build:
+      context: ./ws_server
+      dockerfile: ./devops/docker/node/Dockerfile
+    image: backend_ws:latest
+    command: bash -c "npm start"
+    env_file:
+      - ./ws_server/.env
+    ports:
+      - 5001:5000
+    volumes:
+      - ../logs/betting-app/ws_server/:/app/logs
+    environment:
+      WAIT_HOSTS: redis:6379
+      WAIT_TIMEOUT: 60
+  redis:
+    image: 'redis'
+    volumes:
+      - ../redis-data-betting-app:/data
+      - ../redis-betting-app/:/etc/redis/
+    restart: "on-failure"
+  worker:
+    <<: *app_base
+    command: bash -c "/wait && npm run worker_live"
+    ports:
+      - 5002:5000
+    volumes:
+      - ../logs/betting-app/worker/:/app/logs
+  mongodb:
+    image: mongo:6.0
+    volumes:
+      - ../mongo-data-betting-app:/data/db
+    restart: "on-failure"

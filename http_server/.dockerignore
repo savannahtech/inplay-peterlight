@@ -1,0 +1,8 @@
+.env
+*.sqlite
+docker-compose.yaml
+.dockerignore
+.gitignore
+LICENCE
+README.md
+coverage
